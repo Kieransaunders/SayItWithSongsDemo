@@ -33,6 +33,10 @@ export class LipSyncDriver {
     this.restingSmile = restingSmile;
     this.transitionSeconds = transitionSeconds;
     this.sustainTargets = sustainTargets;
+    // Live-tunable knobs (a UI can set these directly, no rebuild needed): mouthStrength
+    // scales every mouth-cue morph, jawStrength scales jawOpen on top of that.
+    this.mouthStrength = 1;
+    this.jawStrength = 1;
     this.mouthCues = [];
     this.expressionTracks = {};
     this.envelope = null;
@@ -169,16 +173,21 @@ export class LipSyncDriver {
       // Only the jaw settles on a held note. Lip rounding and lip press are held postures —
       // a singer sustaining an "ooo" keeps the pucker for the whole note.
       const from = (current[name] || 0) * (this.sustainTargets.includes(name) ? settle : 1);
-      pose[name] = other ? THREE.MathUtils.lerp(from, other[name] || 0, mix) : from;
+      const blended = other ? THREE.MathUtils.lerp(from, other[name] || 0, mix) : from;
+      pose[name] = this.scaleFor(name) * blended;
     }
     return pose;
   }
 
   blendInto(pose, from, to, mix){
     for (const name of this.controlledMorphs){
-      pose[name] = THREE.MathUtils.lerp(from[name] || 0, to[name] || 0, mix);
+      pose[name] = this.scaleFor(name) * THREE.MathUtils.lerp(from[name] || 0, to[name] || 0, mix);
     }
     return pose;
+  }
+
+  scaleFor(name){
+    return name === 'jawOpen' ? this.mouthStrength * this.jawStrength : this.mouthStrength;
   }
 
   trackAt(name, time){

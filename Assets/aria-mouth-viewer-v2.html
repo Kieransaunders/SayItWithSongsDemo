@@ -23,6 +23,10 @@
   .hint{position:absolute;left:14px;bottom:12px;color:var(--muted);font-size:.78rem;background:rgba(11,18,32,.7);padding:6px 10px;border-radius:8px}
   .list{font-size:.76rem;color:var(--muted);line-height:1.6}
   .list b{color:var(--txt)}
+  .sliders{margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .sliders label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:10px}
+  .sliders span{color:var(--txt);float:right}
+  .sliders input{width:100%;accent-color:var(--accent);margin-top:4px}
 </style>
 </head>
 <body>
@@ -40,6 +44,16 @@
     </div>
     <input type="range" id="timeline" min="0" max="1" step="0.001" value="0"/>
     <div id="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+    <div class="sliders">
+      <label>Mouth strength <span id="mouthStrengthVal">1.00</span>
+        <input type="range" id="mouthStrength" min="0" max="2" step="0.01" value="1"/></label>
+      <label>Jaw strength <span id="jawStrengthVal">1.00</span>
+        <input type="range" id="jawStrength" min="0" max="2" step="0.01" value="1"/></label>
+      <label>Transition speed (ms) <span id="transitionVal">65</span>
+        <input type="range" id="transition" min="10" max="200" step="1" value="65"/></label>
+      <label>Resting smile <span id="restingSmileVal">0.14</span>
+        <input type="range" id="restingSmile" min="0" max="1" step="0.01" value="0.14"/></label>
+    </div>
     <p class="list">
       <b>Mapping</b><br/>
       A → MBP · B → S · C → Eh<br/>
@@ -59,6 +73,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { LipSyncDriver, buildEnvelope } from './lipsync-driver.js';
 
@@ -92,7 +107,7 @@ window.addEventListener('resize', () => {
 
 const audio = new Audio('HappyBirthday.wav');
 // ponytail: ?model=<file> so the same viewer tests any GLB with ARKit morph names
-const MODEL = new URLSearchParams(location.search).get('model') || 'aria-mouth-test.glb';
+const MODEL = new URLSearchParams(location.search).get('model') || 'aria-optimized.glb';
 // ?poses=artist swaps the hand-tuned map for the character artist's Mouth catalog,
 // extracted from the .blend. Kept side by side so the two can be compared rather than
 // one silently replacing the other.
@@ -251,6 +266,7 @@ buildEnvelope('HappyBirthday.vocals.wav')
   .catch(error => console.warn('envelope unavailable, jaw runs unscaled', error));
 
 const loader = new GLTFLoader();
+loader.setMeshoptDecoder(MeshoptDecoder);
 loader.load(MODEL, (gltf) => {
   const root = gltf.scene;
   root.traverse(object => {
@@ -376,6 +392,21 @@ stopBtn.onclick = () => {
   curEl.textContent = fmt(0);
   applyPerformance(0);
 };
+function bindSlider(id, valId, apply){
+  const input = document.getElementById(id);
+  const out = document.getElementById(valId);
+  input.addEventListener('input', () => {
+    const value = parseFloat(input.value);
+    out.textContent = value.toFixed(value < 1 ? 2 : 0);
+    apply(value);
+    if (modelReady) applyPerformance(playing ? audio.currentTime : parseFloat(timeline.value));
+  });
+}
+bindSlider('mouthStrength', 'mouthStrengthVal', v => driver.mouthStrength = v);
+bindSlider('jawStrength', 'jawStrengthVal', v => driver.jawStrength = v);
+bindSlider('transition', 'transitionVal', v => driver.transitionSeconds = v / 1000);
+bindSlider('restingSmile', 'restingSmileVal', v => driver.restingSmile = v);
+
 timeline.addEventListener('input', () => {
   const time = parseFloat(timeline.value);
   audio.currentTime = time;
