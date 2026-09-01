@@ -1,0 +1,278 @@
+{
+ "_comment": "Extracted from 'Aria Blake1.blend' asset catalogs by evaluating each pose action on FaceitControlRig and reading the driven ARKit shape keys through the depsgraph. Values are absolute morph target influences and MAY BE NEGATIVE.",
+ "restBaseline": {
+  "jawOpen": 0.1273,
+  "mouthSmileLeft": 0.1592,
+  "mouthSmileRight": 0.1592
+ },
+ "cueMap": {
+  "A": "MBP",
+  "B": "S",
+  "C": "Eh",
+  "D": "Ah",
+  "E": "Oo",
+  "F": "Ooh",
+  "G": "Fv",
+  "H": "Ai"
+ },
+ "mouth": {
+  "MBP": {
+   "mouthRollLower": 1.0,
+   "mouthRollUpper": 1.0
+  },
+  "Ah": {
+   "jawOpen": 0.2449,
+   "mouthFrownRight": 0.1883,
+   "mouthFrownLeft": 0.4235
+  },
+  "Ai": {
+   "jawOpen": 0.2449,
+   "mouthSmileLeft": 0.3061,
+   "mouthSmileRight": 0.3061
+  },
+  "Ee": {
+   "mouthShrugLower": -1.0,
+   "mouthUpperUpLeft": 0.6194,
+   "mouthUpperUpRight": 0.6194
+  },
+  "Eh": {
+   "jawOpen": 0.0736,
+   "mouthFrownRight": 0.0566,
+   "mouthFrownLeft": 0.0566,
+   "mouthShrugLower": -1.0,
+   "mouthUpperUpLeft": 0.6739,
+   "mouthUpperUpRight": 0.6739
+  },
+  "Fv": {
+   "jawOpen": 0.1969,
+   "mouthSmileLeft": 0.1069,
+   "mouthSmileRight": 0.1069,
+   "mouthRollLower": 1.0,
+   "mouthShrugLower": 0.2374,
+   "mouthLowerDownLeft": -0.211,
+   "mouthLowerDownRight": -0.211
+  },
+  "Oo": {
+   "mouthFunnel": 1.0,
+   "mouthLowerDownLeft": -0.3814,
+   "mouthLowerDownRight": -0.3814,
+   "mouthUpperUpLeft": -0.2509,
+   "mouthUpperUpRight": -0.2509
+  },
+  "Ooh": {
+   "jawForward": 0.0068,
+   "jawOpen": 0.453,
+   "mouthFunnel": 0.4365,
+   "mouthFrownRight": 0.094,
+   "mouthFrownLeft": 0.094,
+   "mouthDimpleLeft": -0.0205,
+   "mouthDimpleRight": -0.0205,
+   "mouthStretchLeft": -0.577,
+   "mouthStretchRight": -0.577,
+   "mouthPressLeft": 0.0074,
+   "mouthPressRight": 0.0074
+  },
+  "R,Sh": {
+   "mouthFunnel": 1.0,
+   "mouthPucker": -0.2399
+  },
+  "S": {
+   "mouthShrugLower": -1.0,
+   "mouthShrugUpper": 0.4843
+  }
+ },
+ "expression": {
+  "Angry": {
+   "mouthFrownRight": 0.4075,
+   "mouthFrownLeft": 0.4075,
+   "mouthShrugLower": -1.0,
+   "mouthUpperUpLeft": 1.0,
+   "mouthUpperUpRight": 1.0,
+   "browDownLeft": 1.0,
+   "browDownRight": 1.0,
+   "browInnerUp": -0.3865
+  },
+  "Awe": {
+   "mouthFunnel": 1.0,
+   "mouthPucker": 0.6782,
+   "mouthLeft": 0.3359,
+   "mouthSmileRight": 0.2424,
+   "mouthShrugLower": 0.0566,
+   "mouthShrugUpper": 0.8578,
+   "browDownLeft": -0.5524,
+   "browDownRight": -0.5524,
+   "browInnerUp": 0.4269
+  },
+  "Confident": {
+   "mouthSmileRight": 0.3328,
+   "browDownLeft": -0.8847,
+   "browDownRight": 0.2913
+  },
+  "Confused ": {
+   "jawOpen": 0.1547,
+   "mouthShrugUpper": 0.1728,
+   "mouthUpperUpLeft": 0.98,
+   "browDownRight": -0.5576
+  },
+  "Daydream": {
+   "eyeBlinkLeft": 0.4642,
+   "eyeBlinkRight": 0.4642,
+   "mouthSmileLeft": 0.8547,
+   "mouthSmileRight": 0.8547,
+   "browInnerUp": 1.0
+  },
+  "Default": {},
+  "Determined": {
+   "mouthSmileLeft": 0.5673,
+   "mouthRollLower": 0.8164,
+   "mouthRollUpper": 1.0,
+   "browDownLeft": -0.5616
+  },
+  "Disgust": {
+   "jawOpen": 0.1315,
+   "mouthLowerDownLeft": 0.3063,
+   "mouthLowerDownRight": 0.3063,
+   "mouthUpperUpLeft": 0.9349
+  },
+  "EvilSmile": {
+   "mouthSmileLeft": 0.6923,
+   "mouthSmileRight": 0.6923,
+   "browInnerUp": -0.5682
+  },
+  "Fear": {
+   "eyeSquintLeft": -0.6696,
+   "eyeWideLeft": 1.0,
+   "eyeSquintRight": -0.6696,
+   "eyeWideRight": 1.0,
+   "jawForward": 0.0085,
+   "jawOpen": 0.5696,
+   "mouthFrownRight": 0.1483,
+   "mouthFrownLeft": 0.1483,
+   "mouthShrugLower": -0.7367,
+   "mouthUpperUpLeft": 1.0,
+   "mouthUpperUpRight": 1.0,
+   "browDownLeft": -1.0,
+   "browDownRight": -1.0,
+   "browInnerUp": 0.8047,
+   "browOuterUpLeft": 1.0,
+   "browOuterUpRight": 1.0
+  },
+  "Flirt": {
+   "eyeBlinkLeft": 0.9569,
+   "eyeBlinkRight": 0.9569,
+   "jawOpen": 0.1744,
+   "mouthSmileLeft": 0.5654,
+   "mouthSmileRight": 0.5654,
+   "mouthRollLower": 1.0,
+   "mouthUpperUpLeft": 0.396,
+   "mouthUpperUpRight": 0.396,
+   "browInnerUp": 0.7186
+  },
+  "Happy": {
+   "jawOpen": 0.117,
+   "mouthSmileLeft": 0.4955,
+   "mouthSmileRight": 0.4955
+  },
+  "Nervous": {
+   "eyeSquintLeft": 0.6785,
+   "eyeSquintRight": 0.6785,
+   "jawOpen": 0.1348,
+   "mouthSmileLeft": 0.3549,
+   "mouthSmileRight": 0.3549,
+   "browInnerUp": 1.0,
+   "noseSneerLeft": 1.0,
+   "noseSneerRight": 1.0
+  },
+  "Puff": {
+   "eyeWideLeft": 0.3702,
+   "eyeWideRight": 0.3702,
+   "mouthPucker": 0.7942,
+   "browInnerUp": 0.524,
+   "cheekPuff": 1.0
+  },
+  "Sad": {
+   "mouthFrownRight": 0.5688,
+   "mouthFrownLeft": 0.5688,
+   "browInnerUp": 0.9304
+  },
+  "Scared": {
+   "eyeWideLeft": 0.4253,
+   "eyeWideRight": 0.4253,
+   "jawForward": 0.0062,
+   "jawOpen": 0.412,
+   "mouthFrownRight": 0.798,
+   "mouthFrownLeft": 0.798,
+   "mouthStretchLeft": -0.4127,
+   "mouthStretchRight": -0.4127,
+   "mouthShrugUpper": 0.2116,
+   "mouthLowerDownLeft": 0.5192,
+   "mouthLowerDownRight": 0.5192,
+   "mouthUpperUpLeft": 0.6154,
+   "mouthUpperUpRight": 0.6154,
+   "browDownLeft": -0.6779,
+   "browDownRight": -0.6779
+  },
+  "Serious": {
+   "mouthFrownRight": 0.3747,
+   "mouthFrownLeft": 0.3747,
+   "browInnerUp": -0.2393,
+   "noseSneerLeft": 1.0,
+   "noseSneerRight": 1.0
+  },
+  "Shock": {
+   "eyeWideLeft": 0.4795,
+   "eyeWideRight": 0.4795,
+   "jawOpen": 0.2768,
+   "mouthUpperUpLeft": 0.2252,
+   "mouthUpperUpRight": 0.2252,
+   "browDownLeft": -1.0,
+   "browDownRight": -1.0
+  },
+  "Shock smile": {
+   "eyeWideLeft": 0.8706,
+   "eyeWideRight": 0.8706,
+   "jawOpen": 0.212,
+   "mouthSmileLeft": 0.3203,
+   "mouthSmileRight": 0.3203,
+   "browInnerUp": 0.8352
+  },
+  "Smile": {
+   "mouthSmileLeft": 0.2392,
+   "mouthSmileRight": 0.2392
+  },
+  "Smolder": {
+   "eyeBlinkLeft": 0.2901,
+   "eyeBlinkRight": 0.2901,
+   "mouthFunnel": 0.0777,
+   "mouthPucker": 0.356,
+   "mouthStretchLeft": -0.7512,
+   "mouthStretchRight": -0.7512,
+   "browInnerUp": 0.7377
+  }
+ },
+ "eyebrow": {
+  "Brow Angry": {
+   "browInnerUp": -0.5291
+  },
+  "Brow down": {
+   "browDownLeft": 0.7012,
+   "browDownRight": 0.7012
+  },
+  "Brow down L": {
+   "browDownRight": 0.7012
+  },
+  "Brow down R": {
+   "browDownLeft": 0.7012
+  },
+  "Brow Upper ": {
+   "browDownLeft": -1.0,
+   "browDownRight": -1.0
+  },
+  "Brow Upper L": {
+   "browDownLeft": -1.0
+  },
+  "Brow Upper R": {
+   "browDownRight": -1.0
+  }
+ }
+}

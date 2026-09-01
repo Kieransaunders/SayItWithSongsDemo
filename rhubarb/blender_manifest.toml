@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+id = "rhubarb_lipsync"
+version = "1.8.1"
+name = "Rhubarb Lipsync NG"
+tagline = "Integrate Rhubarb Lipsync into Blender"
+maintainer = "Premysl Srubar"
+type = "add-on"
+
+website = "https://blendermarket.com/products/rhubarb-lipsync-ng"
+tags = ["Animation"]
+
+blender_version_min = "3.3.0"
+license = ["SPDX:MIT"]
+
+platforms = ["macos-x64", "macos-arm64"]
+files = "Import/export sound files and captures, execute rhubarb cli file"

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Aria Blake — Rhubarb Lip Sync Test (v2)</title>
+<style>
+  :root{--bg:#0b1220;--panel:#131c2e;--line:#26324a;--txt:#e8eef7;--muted:#9fb0c8;--accent:#67e8f9;}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:system-ui,"Segoe UI",sans-serif}
+  #app{display:flex;height:100vh;width:100vw}
+  #view{flex:1;position:relative;min-width:0}
+  canvas{display:block}
+  #panel{width:300px;flex:none;background:var(--panel);border-left:1px solid var(--line);padding:18px;overflow-y:auto}
+  h1{font-size:1.05rem;margin:0 0 2px}
+  .sub{color:var(--muted);font-size:.8rem;margin:0 0 16px;line-height:1.4}
+  .btns{display:flex;gap:8px;margin-bottom:16px}
+  button{flex:1;padding:10px 8px;border:0;border-radius:8px;background:var(--accent);color:#062230;font-weight:700;cursor:pointer;font-size:.9rem}
+  button.sec{background:#26324a;color:var(--txt)}
+  #timeline{width:100%;accent-color:var(--accent);margin:4px 0 14px}
+  #time{color:var(--muted);font-size:.8rem;display:flex;justify-content:space-between;margin-bottom:10px}
+  #status{position:absolute;top:14px;left:14px;color:var(--muted);font-size:.8rem;background:rgba(11,18,32,.7);padding:6px 10px;border-radius:8px}
+  .hint{position:absolute;left:14px;bottom:12px;color:var(--muted);font-size:.78rem;background:rgba(11,18,32,.7);padding:6px 10px;border-radius:8px}
+  .list{font-size:.76rem;color:var(--muted);line-height:1.6}
+  .list b{color:var(--txt)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <div id="status">Loading model…</div>
+    <div class="hint">Drag to rotate · scroll to zoom</div>
+  </div>
+  <div id="panel">
+    <h1>Aria Blake — Lip Sync Test (v2)</h1>
+    <p class="sub">The browser drives the exported ARKit mouth and expression shapes directly from separate performance timelines. No baked Blender lip-sync animation is used during playback. v2: amplitude-driven jaw, real rest pose, eased cue gaps, extracted driver.</p>
+    <div class="btns">
+      <button id="play">▶ Play</button>
+      <button id="stop" class="sec">■ Stop</button>
+    </div>
+    <input type="range" id="timeline" min="0" max="1" step="0.001" value="0"/>
+    <div id="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+    <p class="list">
+      <b>Mapping</b><br/>
+      A → MBP · B → S · C → Eh<br/>
+      D → Ah · E → Aw/Er · F → Oo/W<br/>
+      G → Fv · H → Ai · X → rest<br/>
+      Smile · cheeks · brows · blinks · nods · tilts
+    </p>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { LipSyncDriver, buildEnvelope } from './lipsync-driver.js';
+
+const statusEl = document.getElementById('status');
+const view = document.getElementById('view');
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b1220);
+const camera = new THREE.PerspectiveCamera(35, view.clientWidth/view.clientHeight, 0.01, 100);
+camera.position.set(0, 1.55, 0.55);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(view.clientWidth, view.clientHeight);
+view.appendChild(renderer.domElement);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 1.2));
+const key = new THREE.DirectionalLight(0xffffff, 1.5);
+key.position.set(0.5, 1.2, 1);
+scene.add(key);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.55, 0);
+controls.enableDamping = true;
+
+window.addEventListener('resize', () => {
+  camera.aspect = view.clientWidth/view.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(view.clientWidth, view.clientHeight);
+});
+
+const audio = new Audio('HappyBirthday.wav');
+// ponytail: ?model=<file> so the same viewer tests any GLB with ARKit morph names
+const MODEL = new URLSearchParams(location.search).get('model') || 'aria-mouth-test.glb';
+// ?poses=artist swaps the hand-tuned map for the character artist's Mouth catalog,
+// extracted from the .blend. Kept side by side so the two can be compared rather than
+// one silently replacing the other.
+const POSE_SET = new URLSearchParams(location.search).get('poses') || 'tuned';
+// ?body=Pose11 applies a pose from the character's own Blender pose library.
+const BODY_POSE = new URLSearchParams(location.search).get('body') || '';
+
+const POSES = {
+  // Rhubarb's compact mouth alphabet expressed with exported ARKit morph targets.
+  // Not mouthClose — on this CC4 export it smears the lips at any jawOpen value. CC4's own
+  // V_Explosive is the authored P/B/M shape and gives a firm, clean seal that a press
+  // alone can't; the press and lower-lip roll on top tighten it without looking pinched.
+  A: { V_Explosive: 1.0, mouthPressLeft: 0.3, mouthPressRight: 0.3, mouthRollLower: 0.15 },
+  B: { jawOpen: 0.08, mouthStretchLeft: 0.42, mouthStretchRight: 0.42 },
+  C: { jawOpen: 0.34, mouthStretchLeft: 0.2, mouthStretchRight: 0.2, mouthLowerDownLeft: 0.18, mouthLowerDownRight: 0.18 },
+  D: { jawOpen: 0.78, mouthLowerDownLeft: 0.34, mouthLowerDownRight: 0.34 },
+  // Rhubarb's spec: E is only SLIGHTLY rounded (AO as in "off", ER as in "bird"),
+  // F is the full pucker (UW, OW, W as in "you"). These were inverted.
+  E: { jawOpen: 0.4, mouthFunnel: 0.72, mouthPucker: 0.32 },
+  // ARKit's funnel+pucker can only make a wide "O" on this model — the lips part and the
+  // teeth show. CC4 ships its own V_Tight_O, an authored tight purse that no combination
+  // of ARKit targets reproduces. Keep the ARKit values too so the pose still reads on a
+  // model that only has the 52 standard shapes.
+  F: { V_Tight_O: 0.9, jawOpen: 0.08, mouthFunnel: 0.45, mouthPucker: 0.55 },
+  G: { jawOpen: 0.06, mouthRollLower: 0.58, mouthPressLeft: 0.22, mouthPressRight: 0.22 },
+  H: { jawOpen: 0.48, mouthSmileLeft: 0.28, mouthSmileRight: 0.28, mouthStretchLeft: 0.28, mouthStretchRight: 0.28 },
+  X: {}
+};
+
+// v2/T4: rest is a real pose, not absolute zero. X: {} snapped every morph to 0, which
+// needed two separate patches to look human. Modelled on the artist's own restBaseline in
+// face-poses.json (jawOpen 0.127, smile 0.159) — blending toward it then works for free.
+const REST = { jawOpen: 0.10, mouthSmileLeft: 0.14, mouthSmileRight: 0.14 };
+POSES.X = REST;
+
+const EXPRESSION_TARGETS = {
+  smile: ['mouthSmileLeft', 'mouthSmileRight'],
+  cheekSquint: ['cheekSquintLeft', 'cheekSquintRight'],
+  eyeSquint: ['eyeSquintLeft', 'eyeSquintRight'],
+  browInnerUp: ['browInnerUp'],
+  browOuterUp: ['browOuterUpLeft', 'browOuterUpRight'],
+  blink: ['eyeBlinkLeft', 'eyeBlinkRight']
+};
+const TRANSITION_SECONDS = 0.065;
+// Only the jaw tracks how loudly the note is sung; SUSTAIN_HOLD / SUSTAIN_RAMP /
+// SUSTAIN_FLOOR are retired in favour of the vocal envelope.
+//
+// v1's list also carried the mouthStretch pair, which was correct for a decay that only
+// began after a 0.22s hold — every cue still STARTED at full strength there. The envelope
+// scales from the first frame instead, so keeping stretch in would park every consonant in
+// a quiet passage at ~0.55x for its whole life. Lip stretch is a posture, not a loudness.
+const SUSTAIN_TARGETS = ['jawOpen', 'mouthLowerDownLeft', 'mouthLowerDownRight'];
+// She is singing Happy Birthday. A dead-neutral mouth between phrases reads as bored,
+// so the smile never fully returns to zero.
+const RESTING_SMILE = 0.14;
+
+const driver = new LipSyncDriver({
+  poses: POSES,
+  rest: REST,
+  expressionTargets: EXPRESSION_TARGETS,
+  restingSmile: RESTING_SMILE,
+  transitionSeconds: TRANSITION_SECONDS,
+  sustainTargets: SUSTAIN_TARGETS
+});
+
+let morphMeshes = [];          // plain meshes — same shape as v1's window.viewer.morphMeshes
+let boundMeshes = [];          // {mesh, map} with precomputed morph indices, driver-internal
+let characterPivot = null;
+let headBone = null;
+let headBaseQuaternion = null;
+let modelReady = false;
+let cuesReady = false;
+let expressionsReady = false;
+
+// Reused across frames — the head rotation used to allocate a Euler and a Quaternion every
+// frame, which matters once this drives a phone that is also running AR tracking.
+const headEuler = new THREE.Euler();
+const headQuat = new THREE.Quaternion();
+
+function setReadyState(){
+  if (!modelReady || !cuesReady || !expressionsReady) return;
+  document.getElementById('play').disabled = false;
+  statusEl.textContent = `Ready · ${morphMeshes.length} mouth mesh${morphMeshes.length === 1 ? '' : 'es'} · ${headBone ? 'head bone' : 'pivot'}`;
+  setTimeout(() => statusEl.style.display = 'none', 1500);
+}
+
+function poseAt(time){ return driver.poseAt(time); }
+
+function applyPerformance(time){
+  driver.apply(time, boundMeshes);
+
+  const pitch = THREE.MathUtils.degToRad(driver.trackAt('headPitch', time));
+  const roll = THREE.MathUtils.degToRad(driver.trackAt('headRoll', time));
+  if (headBone){
+    // ponytail: bone-local axes, not world — fine for the couple of degrees these tracks use
+    headEuler.set(pitch, 0, roll);
+    headQuat.setFromEuler(headEuler);
+    headBone.quaternion.copy(headBaseQuaternion).multiply(headQuat);
+  } else if (characterPivot){
+    characterPivot.rotation.x = pitch;
+    characterPivot.rotation.z = roll;
+  }
+}
+
+fetch('HappyBirthday.vocals.rhubarb.json', { cache: 'no-store' })
+  .then(response => {
+    if (!response.ok) throw new Error(`Timing data returned ${response.status}`);
+    return response.json();
+  })
+  .then(data => {
+    driver.setCues(data.mouthCues);
+    cuesReady = true;
+    setReadyState();
+  })
+  .catch(error => {
+    statusEl.textContent = 'Failed to load mouth timing data';
+    console.error(error);
+  });
+
+fetch('HappyBirthday.expressions.json', { cache: 'no-store' })
+  .then(response => {
+    if (!response.ok) throw new Error(`Expression data returned ${response.status}`);
+    return response.json();
+  })
+  .then(data => {
+    driver.setExpressionTracks(data.tracks);
+    expressionsReady = true;
+    setReadyState();
+  })
+  .catch(error => {
+    statusEl.textContent = 'Failed to load expression timing data';
+    console.error(error);
+  });
+
+if (POSE_SET === 'artist'){
+  // Top-level await: nothing below this line runs until the pose set is in place, so mesh
+  // binding below always sees the final morph list. No list mutation, no ordering hazard.
+  const res = await fetch('face-poses.json', { cache: 'no-store' });
+  const lib = await res.json();
+  const artist = {};
+  for (const [cue, poseName] of Object.entries(lib.cueMap)){
+    artist[cue] = lib.mouth[poseName] || {};
+  }
+  artist.X = lib.restBaseline || REST;
+  driver.setPoses(artist);
+  console.log('using artist pose set', artist);
+}
+
+// T1: build the loudness envelope from the vocal-only stem so no instrument leaks into the
+// measurement. Same 30.553s duration and time origin as the mix that actually plays.
+buildEnvelope('HappyBirthday.vocals.wav')
+  .then(envelope => {
+    driver.setEnvelope(envelope);
+    console.log(`amplitude envelope ready: ${envelope.buckets} buckets`);
+  })
+  .catch(error => console.warn('envelope unavailable, jaw runs unscaled', error));
+
+const loader = new GLTFLoader();
+loader.load(MODEL, (gltf) => {
+  const root = gltf.scene;
+  root.traverse(object => {
+    if (object.isMesh && object.morphTargetDictionary && object.morphTargetInfluences){
+      const map = driver.bindMesh(object);
+      if (map){ morphMeshes.push(object); boundMeshes.push({ mesh: object, map }); }
+    }
+  });
+  scene.add(root);
+
+  // frame the head area
+  const box = new THREE.Box3().setFromObject(root);
+  const size = new THREE.Vector3(); box.getSize(size);
+  const center = new THREE.Vector3(); box.getCenter(center);
+  // ponytail: head-height heuristic — mesh is the whole body, this test only cares about the mouth
+  const headY = box.max.y - size.y*0.075;
+
+  // Prefer a real head bone when the model has one; only fall back to rotating the
+  // whole mesh around head height for morph-only exports with no armature.
+  // GLTFLoader strips dots from glTF node names, so the bone exported as "head.x"
+  // arrives as "headx". Match on letters only rather than the authored name.
+  root.traverse(object => {
+    if (!headBone && object.isBone && /^head[xl]?$/i.test(object.name.replace(/[^a-z]/gi, ''))) headBone = object;
+  });
+  if (headBone){
+    headBaseQuaternion = headBone.quaternion.clone();
+  } else {
+    characterPivot = new THREE.Group();
+    characterPivot.position.set(center.x, headY, center.z);
+    scene.add(characterPivot);
+    characterPivot.attach(root);
+  }
+
+  // A real head bone frames far better than a bbox guess: prop meshes and raised
+  // arms both push box.max.y above the head and put the close-up on the chest.
+  const focus = new THREE.Vector3(center.x, headY, center.z);
+  if (headBone) headBone.getWorldPosition(focus);
+  // Box3 on a skinned mesh reports the bind-pose geometry bounds, which on this rig
+  // come out ~0.4 units for a 1.46 m character — useless as a distance scale. The
+  // head bone's own height is the reliable one.
+  const reach = headBone ? focus.y * 0.35 : size.y * 0.30;
+  camera.position.set(focus.x, focus.y, focus.z + reach);
+  controls.target.copy(focus);
+  controls.update();
+
+  // ponytail: one handle so a browser/automated check can read state without a UI
+  window.viewer = {
+    scene, camera, controls, root, morphMeshes, audio, applyPerformance, driver,
+    // Copy out: the driver returns a shared scratch pose, so two raw calls would alias.
+    poseAt: time => ({ ...driver.poseAt(time) }),
+    get headBone(){ return headBone; },
+    // Seek through the timeline, not audio.currentTime: the pose is only recomputed
+    // while playing or on a timeline 'input', so a raw currentTime write leaves the
+    // face on whatever pose it was last given.
+    seek(time){ timeline.value = time; timeline.dispatchEvent(new Event('input')); }
+  };
+
+  if (BODY_POSE){
+    // The library poses key Auto-Rig Pro control bones that the export doesn't contain,
+    // so these are the *evaluated* deform-bone rotations. Compose onto the bind pose
+    // rather than replacing it, or the skeleton snaps to garbage on the first frame.
+    const bones = new Map();
+    root.traverse(o => { if (o.isBone) bones.set(o.name.toLowerCase(), o); });
+    fetch('body-poses.json', { cache: 'no-store' }).then(r => r.json()).then(lib => {
+      const pose = lib.poses[BODY_POSE];
+      if (!pose) return console.warn('no such body pose', BODY_POSE);
+      let applied = 0;
+      for (const [name, q] of Object.entries(pose)){
+        const bone = bones.get(name);
+        if (!bone) continue;
+        bone.quaternion.multiply(new THREE.Quaternion(q[0], q[1], q[2], q[3]));
+        applied++;
+      }
+      console.log(`body pose ${BODY_POSE}: applied ${applied}/${Object.keys(pose).length} bones`);
+    });
+  }
+
+  if (!morphMeshes.length) throw new Error('The model has no supported ARKit mouth morph targets');
+  modelReady = true;
+  applyPerformance(0);
+  setReadyState();
+}, undefined, (err) => {
+  statusEl.textContent = "Failed to load model";
+  console.error(err);
+});
+
+function fmt(t){
+  t = Math.max(0,t|0);
+  return Math.floor(t/60)+":"+String(t%60).padStart(2,'0');
+}
+
+const playBtn = document.getElementById('play');
+const stopBtn = document.getElementById('stop');
+const timeline = document.getElementById('timeline');
+const curEl = document.getElementById('cur');
+playBtn.disabled = true;
+
+audio.addEventListener('loadedmetadata', () => {
+  timeline.max = audio.duration;
+  document.getElementById('dur').textContent = fmt(audio.duration);
+});
+
+let playing = false;
+playBtn.onclick = () => {
+  if (!modelReady || !cuesReady) return;
+  if (playing){
+    audio.pause();
+    playing = false;
+    playBtn.textContent = '▶ Play';
+  } else {
+    audio.currentTime = timeline.value;
+    audio.play();
+    playing = true;
+    playBtn.textContent = '⏸ Pause';
+  }
+};
+stopBtn.onclick = () => {
+  audio.pause();
+  audio.currentTime = 0;
+  playing = false;
+  playBtn.textContent = '▶ Play';
+  timeline.value = 0;
+  curEl.textContent = fmt(0);
+  applyPerformance(0);
+};
+timeline.addEventListener('input', () => {
+  const time = parseFloat(timeline.value);
+  audio.currentTime = time;
+  curEl.textContent = fmt(time);
+  applyPerformance(time);
+});
+audio.addEventListener('ended', () => {
+  playing = false;
+  playBtn.textContent = '▶ Play';
+});
+
+function animate(){
+  requestAnimationFrame(animate);
+  if (playing){
+    applyPerformance(audio.currentTime);
+    timeline.value = audio.currentTime;
+    curEl.textContent = fmt(audio.currentTime);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+</body>
+</html>
