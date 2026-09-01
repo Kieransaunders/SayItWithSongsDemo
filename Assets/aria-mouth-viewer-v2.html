@@ -121,7 +121,10 @@ const POSES = {
   // V_Explosive is the authored P/B/M shape and gives a firm, clean seal that a press
   // alone can't; the press and lower-lip roll on top tighten it without looking pinched.
   A: { V_Explosive: 1.0, mouthPressLeft: 0.3, mouthPressRight: 0.3, mouthRollLower: 0.15 },
-  B: { jawOpen: 0.08, mouthStretchLeft: 0.42, mouthStretchRight: 0.42 },
+  // Stretch dropped from 0.42 — at full strength it bled into short neighboring cues
+  // (the "P" of "Happy" is only an ~0.1s A cue, shorter than the transition blend) and
+  // read as wide lips instead of the tight A/F pose either side of it.
+  B: { jawOpen: 0.08, mouthStretchLeft: 0.22, mouthStretchRight: 0.22 },
   C: { jawOpen: 0.34, mouthStretchLeft: 0.2, mouthStretchRight: 0.2, mouthLowerDownLeft: 0.18, mouthLowerDownRight: 0.18 },
   D: { jawOpen: 0.78, mouthLowerDownLeft: 0.34, mouthLowerDownRight: 0.34 },
   // Rhubarb's spec: E is only SLIGHTLY rounded (AO as in "off", ER as in "bird"),
